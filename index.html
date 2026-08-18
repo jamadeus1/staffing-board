@@ -1,0 +1,463 @@
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staffing Board — POZ1 IB</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f0f1a; color: #eee; min-height: 100vh; }
+
+        /* NAV */
+        .navbar { background: #1a1a2e; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #2a2a4a; position: sticky; top: 0; z-index: 100; }
+        .nav-left { display: flex; align-items: center; gap: 20px; }
+        .nav-logo { font-size: 20px; font-weight: 700; color: #e94560; }
+        .nav-tabs { display: flex; gap: 4px; }
+        .nav-tab { padding: 8px 16px; border-radius: 6px; font-size: 13px; cursor: pointer; color: #888; transition: all 0.2s; }
+        .nav-tab:hover { color: #fff; background: #2a2a4a; }
+        .nav-tab.active { color: #fff; background: #e94560; }
+        .nav-right { display: flex; align-items: center; gap: 15px; }
+        .nav-date { font-size: 13px; color: #888; }
+
+        /* LAYOUT */
+        .main { display: grid; grid-template-columns: 1fr 300px; min-height: calc(100vh - 57px); }
+        .content { padding: 20px; overflow-y: auto; }
+        .sidebar { background: #1a1a2e; border-left: 1px solid #2a2a4a; padding: 20px; overflow-y: auto; }
+
+        /* STATS */
+        .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+        .stat-card { background: #1a1a2e; border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #2a2a4a; }
+        .stat-card .value { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+        .stat-card .label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+        .green .value { color: #4caf50; }
+        .red .value { color: #f44336; }
+        .blue .value { color: #2196f3; }
+        .orange .value { color: #ff9800; }
+        .purple .value { color: #9c27b0; }
+
+        /* SECTION */
+        .section-title { font-size: 14px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; margin-top: 20px; }
+
+        /* SHIFT GRID */
+        .shift-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+        .shift-card { background: #1a1a2e; border-radius: 8px; padding: 12px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #2a2a4a; }
+        .shift-card .name { font-size: 13px; font-weight: 500; }
+        .badge { padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+        .badge-yes { background: #4caf5020; color: #4caf50; }
+        .badge-no { background: #f4433620; color: #f44336; }
+
+        /* ROSTER TABLE */
+        .table-wrap { background: #1a1a2e; border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+        .roster-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .roster-table th { background: #16213e; padding: 10px 12px; text-align: left; color: #888; font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }
+        .roster-table td { padding: 8px 12px; border-bottom: 1px solid #0f0f1a; }
+        .roster-table tr:hover { background: #16213e; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        .login-cell { font-weight: 600; color: #fff; font-family: 'Consolas', monospace; }
+
+        /* TOWER */
+        .tower-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        .tower-card { background: #1a1a2e; border-radius: 10px; padding: 16px; border: 1px solid #2a2a4a; }
+        .tower-card .tower-header { text-align: center; margin-bottom: 12px; }
+        .tower-card .tower-total { font-size: 24px; font-weight: 700; }
+        .tower-card .tower-label { font-size: 11px; color: #888; }
+        .tower-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+        .tower-bar .letter { width: 22px; height: 22px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; background: #2a2a4a; }
+        .tower-bar .bar { height: 16px; border-radius: 3px; min-width: 3px; }
+        .tower-bar .count { font-size: 11px; color: #888; min-width: 16px; }
+
+        /* IMPORT */
+        .import-section { margin-bottom: 20px; }
+        .import-btn { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #0f0f1a; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 1px solid #2a2a4a; margin-bottom: 6px; }
+        .import-btn:hover { border-color: #e94560; }
+        .import-btn .icon { font-size: 16px; }
+        .import-btn .text { font-size: 12px; flex: 1; }
+        .import-btn .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .dot-green { background: #4caf50; }
+        .dot-orange { background: #ff9800; }
+        .dot-red { background: #f44336; }
+
+        .import-btn.loaded { border-color: #4caf50; }
+        .import-btn.loaded .text { color: #4caf50; }
+
+        /* INDIRECT */
+        .indirect-card { background: #0f0f1a; border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .indirect-card .role { font-size: 12px; color: #888; }
+        .indirect-card .count { font-size: 12px; font-weight: 600; }
+
+        /* GENERATE */
+        .generate-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #e94560, #ff6b6b); color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.3s; margin-top: 12px; }
+        .generate-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(233,69,96,0.3); }
+        .generate-btn:disabled { opacity: 0.4; pointer-events: none; }
+
+        /* TABS */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* FILTERS */
+        .filter-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .filter-chip { padding: 6px 12px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 16px; font-size: 11px; cursor: pointer; transition: all 0.2s; }
+        .filter-chip:hover, .filter-chip.active { border-color: #e94560; color: #e94560; }
+
+        /* PODZIAL INFO */
+        .podzial-info { background: #16213e; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 12px; color: #aaa; border-left: 3px solid #e94560; }
+        .podzial-info strong { color: #fff; }
+
+        /* ACTION BUTTONS */
+        .action-row { display: flex; gap: 10px; margin-top: 16px; justify-content: center; }
+        .action-btn { padding: 10px 24px; border-radius: 8px; font-size: 13px; cursor: pointer; border: none; font-weight: 500; }
+        .action-btn.primary { background: #e94560; color: #fff; }
+        .action-btn.secondary { background: #2a2a4a; color: #fff; border: 1px solid #444; }
+
+        input[type="file"] { display: none; }
+
+        /* SEARCH */
+        .search-box { width: 100%; padding: 8px 12px; background: #0f0f1a; border: 1px solid #2a2a4a; border-radius: 6px; color: #fff; font-size: 12px; margin-bottom: 12px; }
+        .search-box::placeholder { color: #555; }
+    </style>
+</head>
+<body>
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="nav-left">
+            <div class="nav-logo">📋 Staffing Board</div>
+            <div class="nav-tabs">
+                <div class="nav-tab active" onclick="showTab('dashboard')">Dashboard</div>
+                <div class="nav-tab" onclick="showTab('roster')">Roster</div>
+                <div class="nav-tab" onclick="showTab('indirect')">Indirect</div>
+                <div class="nav-tab" onclick="showTab('finito')">FINITO</div>
+                <div class="nav-tab" onclick="showTab('import')">Import</div>
+            </div>
+        </div>
+        <div class="nav-right">
+            <div class="nav-date">📅 18.08.2026 | POZ1 — IB</div>
+        </div>
+    </nav>
+
+    <div class="main">
+        <div class="content">
+
+            <!-- DASHBOARD -->
+            <div class="tab-content active" id="tab-dashboard">
+                <div class="stats-row">
+                    <div class="stat-card green"><div class="value" id="stat-presence">187</div><div class="label">Planned Presence</div></div>
+                    <div class="stat-card red"><div class="value" id="stat-absence">34</div><div class="label">Absencje</div></div>
+                    <div class="stat-card orange"><div class="value" id="stat-switchout">8</div><div class="label">Switch Out</div></div>
+                    <div class="stat-card blue"><div class="value" id="stat-switchin">12</div><div class="label">Switch IN + OT</div></div>
+                    <div class="stat-card purple"><div class="value" id="stat-indirect">15</div><div class="label">Indirect</div></div>
+                </div>
+
+                <div class="section-title">🔄 Zmiany pracujące</div>
+                <div class="shift-grid">
+                    <div class="shift-card"><span class="name">PLA5A</span><span class="badge badge-yes">TAK</span></div>
+                    <div class="shift-card"><span class="name">PLA5B</span><span class="badge badge-yes">TAK</span></div>
+                    <div class="shift-card"><span class="name">PLA5C</span><span class="badge badge-yes">TAK</span></div>
+                    <div class="shift-card"><span class="name">PLA5D</span><span class="badge badge-yes">TAK</span></div>
+                    <div class="shift-card"><span class="name">PLK5A</span><span class="badge badge-yes">TAK</span></div>
+                    <div class="shift-card"><span class="name">PLK5B</span><span class="badge badge-yes">TAK</span></div>
+                    <div class="shift-card"><span class="name">PLK5C</span><span class="badge badge-yes">TAK</span></div>
+                    <div class="shift-card"><span class="name">PLK5D</span><span class="badge badge-yes">TAK</span></div>
+                    <div class="shift-card"><span class="name">PLB1</span><span class="badge badge-no">NIE</span></div>
+                </div>
+
+                <div class="section-title">👥 Roster — podgląd (login)</div>
+                <div class="table-wrap">
+                    <table class="roster-table">
+                        <thead><tr><th>Status</th><th>Login</th><th>Shift</th><th>Manager</th><th>Typ</th><th>Indirect</th></tr></thead>
+                        <tbody>
+                            <tr><td><span class="status-dot" style="background:#4caf50"></span>Obecny</td><td class="login-cell">provasyl</td><td>PLA5A</td><td>Pozniak,M</td><td>REG</td><td>—</td></tr>
+                            <tr><td><span class="status-dot" style="background:#4caf50"></span>Obecny</td><td class="login-cell">pkkufel</td><td>PLA5A</td><td>Pozniak,M</td><td>REG</td><td>—</td></tr>
+                            <tr><td><span class="status-dot" style="background:#f44336"></span>Absent</td><td class="login-cell">nomgd</td><td>PLA5B</td><td>Kowalski,J</td><td>REG</td><td>—</td></tr>
+                            <tr><td><span class="status-dot" style="background:#4caf50"></span>Obecny</td><td class="login-cell">wojcied</td><td>PLK5A</td><td>Pozniak,M</td><td>REG</td><td>—</td></tr>
+                            <tr><td><span class="status-dot" style="background:#ff9800"></span>Switch Out</td><td class="login-cell">dzafeseh</td><td>PLA5C</td><td>Nowak,A</td><td>TEMP</td><td>—</td></tr>
+                            <tr><td><span class="status-dot" style="background:#4caf50"></span>Obecny</td><td class="login-cell">zarana</td><td>PLK5B</td><td>Pozniak,M</td><td>REG</td><td>WS</td></tr>
+                            <tr><td><span class="status-dot" style="background:#4caf50"></span>Obecny</td><td class="login-cell">jlosinsk</td><td>PLA5A</td><td>Kowalski,J</td><td>REG</td><td>—</td></tr>
+                            <tr><td><span class="status-dot" style="background:#2196f3"></span>OT</td><td class="login-cell">patkubia</td><td>PLA5D</td><td>Nowak,A</td><td>REG</td><td>—</td></tr>
+                            <tr><td><span class="status-dot" style="background:#4caf50"></span>Obecny</td><td class="login-cell">oihnatch</td><td>PLK5C</td><td>Pozniak,M</td><td>REG</td><td>—</td></tr>
+                            <tr><td><span class="status-dot" style="background:#4caf50"></span>Obecny</td><td class="login-cell">mjjask</td><td>PLA5B</td><td>Kowalski,J</td><td>REG</td><td>PS</td></tr>
+                            <tr><td><span class="status-dot" style="background:#f44336"></span>Absent</td><td class="login-cell">vishapov</td><td>PLK5A</td><td>Nowak,A</td><td>TEMP</td><td>—</td></tr>
+                            <tr><td><span class="status-dot" style="background:#4caf50"></span>Obecny</td><td class="login-cell">wawrzmik</td><td>PLA5C</td><td>Pozniak,M</td><td>REG</td><td>—</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ROSTER -->
+            <div class="tab-content" id="tab-roster">
+                <div class="section-title">👥 Pełny Roster — 18.08.2026</div>
+                <input type="text" class="search-box" placeholder="🔍 Szukaj po loginie..." oninput="filterRoster(this.value)">
+                <div class="filter-row">
+                    <div class="filter-chip active" onclick="filterByStatus('all')">Wszyscy</div>
+                    <div class="filter-chip" onclick="filterByStatus('present')">Obecni</div>
+                    <div class="filter-chip" onclick="filterByStatus('absent')">Absencje</div>
+                    <div class="filter-chip" onclick="filterByStatus('switchout')">Switch Out</div>
+                    <div class="filter-chip" onclick="filterByStatus('ot')">OT / Switch IN</div>
+                </div>
+                <div class="table-wrap">
+                    <table class="roster-table" id="fullRoster">
+                        <thead><tr><th>Status</th><th>Login</th><th>Shift</th><th>Badge</th><th>Manager</th><th>Typ</th></tr></thead>
+                        <tbody>
+                            <tr data-status="present"><td><span class="status-dot" style="background:#4caf50"></span>Obecny</td><td class="login-cell">provasyl</td><td>PLA5AGRN</td><td>A1234</td><td>Pozniak,M</td><td>REG</td></tr>
+                            <tr data-status="present"><td><span class="status-dot" style="background:#4caf50"></span>Obecny</td><td class="login-cell">pkkufel</td><td>PLA5AGRN</td><td>A1235</td><td>Pozniak,M</td><td>REG</td></tr>
+                            <tr data-status="present"><td><span class="status-dot" style="background:#4caf50"></span>Obecny</td><td class="login-cell">jlosinsk</td><td>PLA5AGRN</td><td>A1236</td><td>Kowalski,J</td><td>REG</td></tr>
+                            <tr data-status="absent"><td><span class="status-dot" style="background:#f44336"></span>Absent</td><td class="login-cell">nomgd</td><td>PLA5BGRN</td><td>A1240</td><td>Kowalski,J</td><td>REG</td></tr>
+                            <tr data-status="present"><td><span class="status-dot" style="background:#4caf50"></span>Obecny</td><td class="login-cell">mjjask</td><td>PLA5BGRN</td><td>A1241</td><td>Kowalski,J</td><td>REG</td></tr>
+                            <tr data-status="present"><td><span class="status-dot" style="background:#4caf50"></span>Obecny</td><td class="login-cell">wawrzmik</td><td>PLA5CGRN</td><td>A1250</td><td>Pozniak,M</td><td>REG</td></tr>
+                            <tr data-status="switchout"><td><span class="status-dot" style="background:#ff9800"></span>Switch Out</td><td class="login-cell">dzafeseh</td><td>PLA5CGRN</td><td>A1251</td><td>Nowak,A</td><td>TEMP</td></tr>
+                            <tr data-status="ot"><td><span class="status-dot" style="background:#2196f3"></span>OT</td><td class="login-cell">patkubia</td><td>PLA5DGRN</td><td>A1260</td><td>Nowak,A</td><td>REG</td></tr>
+                            <tr data-status="present"><td><span class="status-dot" style="background:#4caf50"></span>Obecny</td><td class="login-cell">wojcied</td><td>PLK5AGRN</td><td>A1300</td><td>Pozniak,M</td><td>REG</td></tr>
+                            <tr data-status="absent"><td><span class="status-dot" style="background:#f44336"></span>Absent</td><td class="login-cell">vishapov</td><td>PLK5AGRN</td><td>A1301</td><td>Nowak,A</td><td>TEMP</td></tr>
+                            <tr data-status="present"><td><span class="status-dot" style="background:#4caf50"></span>Obecny</td><td class="login-cell">zarana</td><td>PLK5BGRN</td><td>A1310</td><td>Pozniak,M</td><td>REG</td></tr>
+                            <tr data-status="present"><td><span class="status-dot" style="background:#4caf50"></span>Obecny</td><td class="login-cell">oihnatch</td><td>PLK5CGRN</td><td>A1320</td><td>Pozniak,M</td><td>REG</td></tr>
+                            <tr data-status="present"><td><span class="status-dot" style="background:#4caf50"></span>Obecny</td><td class="login-cell">kapalp</td><td>PLK5DGRN</td><td>A1330</td><td>Pozniak,M</td><td>REG</td></tr>
+                            <tr data-status="present"><td><span class="status-dot" style="background:#4caf50"></span>Obecny</td><td class="login-cell">szymkoja</td><td>PLA5AGRN</td><td>A1237</td><td>Kowalski,J</td><td>REG</td></tr>
+                            <tr data-status="present"><td><span class="status-dot" style="background:#4caf50"></span>Obecny</td><td class="login-cell">sanokpau</td><td>PLA5BGRN</td><td>A1242</td><td>Pozniak,M</td><td>REG</td></tr>
+                            <tr data-status="present"><td><span class="status-dot" style="background:#4caf50"></span>Obecny</td><td class="login-cell">pawlmilo</td><td>PLK5AGRN</td><td>A1302</td><td>Kowalski,J</td><td>REG</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- INDIRECT -->
+            <div class="tab-content" id="tab-indirect">
+                <div class="section-title">🔧 Tablica Indirect — przypisania</div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                    <div style="background:#1a1a2e; border-radius:10px; padding:16px; border:1px solid #2a2a4a;">
+                        <h4 style="color:#e94560; font-size:13px; margin-bottom:10px;">🕷️ Waterspider</h4>
+                        <div style="padding:6px 0; font-size:12px; border-bottom:1px solid #2a2a4a;" class="login-cell">zarana</div>
+                        <div style="padding:6px 0; font-size:12px; border-bottom:1px solid #2a2a4a;" class="login-cell">kapalp</div>
+                        <div style="padding:6px 0; font-size:12px;" class="login-cell">szymkoja</div>
+                        <div style="margin-top:10px; padding:8px; border:1px dashed #2a2a4a; border-radius:6px; text-align:center; font-size:11px; color:#666; cursor:pointer;">+ Przypisz</div>
+                    </div>
+                    <div style="background:#1a1a2e; border-radius:10px; padding:16px; border:1px solid #2a2a4a;">
+                        <h4 style="color:#2196f3; font-size:13px; margin-bottom:10px;">🔍 Problem Solve</h4>
+                        <div style="padding:6px 0; font-size:12px; border-bottom:1px solid #2a2a4a;" class="login-cell">mjjask</div>
+                        <div style="padding:6px 0; font-size:12px; border-bottom:1px solid #2a2a4a;" class="login-cell">urbapaw</div>
+                        <div style="padding:6px 0; font-size:12px;" class="login-cell">jankagni</div>
+                        <div style="margin-top:10px; padding:8px; border:1px dashed #2a2a4a; border-radius:6px; text-align:center; font-size:11px; color:#666; cursor:pointer;">+ Przypisz</div>
+                    </div>
+                    <div style="background:#1a1a2e; border-radius:10px; padding:16px; border:1px solid #2a2a4a;">
+                        <h4 style="color:#ff9800; font-size:13px; margin-bottom:10px;">📦 Decant</h4>
+                        <div style="padding:6px 0; font-size:12px; border-bottom:1px solid #2a2a4a;" class="login-cell">grillkat</div>
+                        <div style="padding:6px 0; font-size:12px;" class="login-cell">czkalwio</div>
+                        <div style="margin-top:10px; padding:8px; border:1px dashed #2a2a4a; border-radius:6px; text-align:center; font-size:11px; color:#666; cursor:pointer;">+ Przypisz</div>
+                    </div>
+                    <div style="background:#1a1a2e; border-radius:10px; padding:16px; border:1px solid #2a2a4a;">
+                        <h4 style="color:#4caf50; font-size:13px; margin-bottom:10px;">🍽️ Obiady</h4>
+                        <div style="padding:6px 0; font-size:12px; border-bottom:1px solid #2a2a4a;" class="login-cell">sanokpau</div>
+                        <div style="padding:6px 0; font-size:12px;" class="login-cell">pawlmilo</div>
+                        <div style="margin-top:10px; padding:8px; border:1px dashed #2a2a4a; border-radius:6px; text-align:center; font-size:11px; color:#666; cursor:pointer;">+ Przypisz</div>
+                    </div>
+                    <div style="background:#1a1a2e; border-radius:10px; padding:16px; border:1px solid #2a2a4a;">
+                        <h4 style="color:#9c27b0; font-size:13px; margin-bottom:10px;">🏋️ Count</h4>
+                        <div style="padding:6px 0; font-size:12px; border-bottom:1px solid #2a2a4a;" class="login-cell">nowakbar</div>
+                        <div style="padding:6px 0; font-size:12px;" class="login-cell">woznpaw</div>
+                        <div style="margin-top:10px; padding:8px; border:1px dashed #2a2a4a; border-radius:6px; text-align:center; font-size:11px; color:#666; cursor:pointer;">+ Przypisz</div>
+                    </div>
+                    <div style="background:#1a1a2e; border-radius:10px; padding:16px; border:1px solid #2a2a4a;">
+                        <h4 style="color:#00bcd4; font-size:13px; margin-bottom:10px;">🎓 Training</h4>
+                        <div style="padding:6px 0; font-size:12px;" class="login-cell">nowakkar</div>
+                        <div style="margin-top:10px; padding:8px; border:1px dashed #2a2a4a; border-radius:6px; text-align:center; font-size:11px; color:#666; cursor:pointer;">+ Przypisz</div>
+                    </div>
+                    <div style="background:#1a1a2e; border-radius:10px; padding:16px; border:1px solid #2a2a4a;">
+                        <h4 style="color:#ffeb3b; font-size:13px; margin-bottom:10px;">📢 Stand Up</h4>
+                        <div style="padding:6px 0; font-size:12px; border-bottom:1px solid #2a2a4a;" class="login-cell">provasyl</div>
+                        <div style="padding:6px 0; font-size:12px;" class="login-cell">pkkufel</div>
+                        <div style="margin-top:10px; padding:8px; border:1px dashed #2a2a4a; border-radius:6px; text-align:center; font-size:11px; color:#666; cursor:pointer;">+ Przypisz</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FINITO -->
+            <div class="tab-content" id="tab-finito">
+                <div class="section-title">🏗️ FINITO — Podział na wieże (EOS)</div>
+                <div class="podzial-info">
+                    <strong>Data:</strong> 18.08.2026 (Poniedziałek) | <strong>Podział:</strong> A → Z | <strong>Wieże:</strong> U2 + U3 | <strong>Shift:</strong> DAY | <strong>MOT:</strong> NIE
+                </div>
+                <div class="tower-grid">
+                    <div class="tower-card" style="border-top: 3px solid #4caf50;">
+                        <div class="tower-header"><div class="tower-total" style="color:#4caf50;">19</div><div class="tower-label">WIEŻA 1 (A–F)</div></div>
+                        <div class="tower-bar"><span class="letter">A</span><div class="bar" style="width:30px; background:#4caf50;"></div><span class="count">3</span></div>
+                        <div class="tower-bar"><span class="letter">B</span><div class="bar" style="width:80px; background:#4caf50;"></div><span class="count">8</span></div>
+                        <div class="tower-bar"><span class="letter">C</span><div class="bar" style="width:20px; background:#4caf50;"></div><span class="count">2</span></div>
+                        <div class="tower-bar"><span class="letter">D</span><div class="bar" style="width:50px; background:#4caf50;"></div><span class="count">5</span></div>
+                        <div class="tower-bar"><span class="letter">E</span><div class="bar" style="width:3px; background:#333;"></div><span class="count">0</span></div>
+                        <div class="tower-bar"><span class="letter">F</span><div class="bar" style="width:10px; background:#4caf50;"></div><span class="count">1</span></div>
+                    </div>
+                    <div class="tower-card" style="border-top: 3px solid #2196f3;">
+                        <div class="tower-header"><div class="tower-total" style="color:#2196f3;">25</div><div class="tower-label">WIEŻA 2 (G–L)</div></div>
+                        <div class="tower-bar"><span class="letter">G</span><div class="bar" style="width:30px; background:#2196f3;"></div><span class="count">3</span></div>
+                        <div class="tower-bar"><span class="letter">H</span><div class="bar" style="width:10px; background:#2196f3;"></div><span class="count">1</span></div>
+                        <div class="tower-bar"><span class="letter">I</span><div class="bar" style="width:30px; background:#2196f3;"></div><span class="count">3</span></div>
+                        <div class="tower-bar"><span class="letter">J</span><div class="bar" style="width:30px; background:#2196f3;"></div><span class="count">3</span></div>
+                        <div class="tower-bar"><span class="letter">K</span><div class="bar" style="width:110px; background:#2196f3;"></div><span class="count">11</span></div>
+                        <div class="tower-bar"><span class="letter">L</span><div class="bar" style="width:40px; background:#2196f3;"></div><span class="count">4</span></div>
+                    </div>
+                    <div class="tower-card" style="border-top: 3px solid #ff9800;">
+                        <div class="tower-header"><div class="tower-total" style="color:#ff9800;">34</div><div class="tower-label">WIEŻA 3 (M–R)</div></div>
+                        <div class="tower-bar"><span class="letter">M</span><div class="bar" style="width:90px; background:#ff9800;"></div><span class="count">9</span></div>
+                        <div class="tower-bar"><span class="letter">N</span><div class="bar" style="width:60px; background:#ff9800;"></div><span class="count">6</span></div>
+                        <div class="tower-bar"><span class="letter">O</span><div class="bar" style="width:40px; background:#ff9800;"></div><span class="count">4</span></div>
+                        <div class="tower-bar"><span class="letter">P</span><div class="bar" style="width:100px; background:#ff9800;"></div><span class="count">10</span></div>
+                        <div class="tower-bar"><span class="letter">R</span><div class="bar" style="width:50px; background:#ff9800;"></div><span class="count">5</span></div>
+                    </div>
+                    <div class="tower-card" style="border-top: 3px solid #9c27b0;">
+                        <div class="tower-header"><div class="tower-total" style="color:#9c27b0;">28</div><div class="tower-label">WIEŻA 4 (S–Z)</div></div>
+                        <div class="tower-bar"><span class="letter">S</span><div class="bar" style="width:100px; background:#9c27b0;"></div><span class="count">10</span></div>
+                        <div class="tower-bar"><span class="letter">T</span><div class="bar" style="width:50px; background:#9c27b0;"></div><span class="count">5</span></div>
+                        <div class="tower-bar"><span class="letter">U</span><div class="bar" style="width:20px; background:#9c27b0;"></div><span class="count">2</span></div>
+                        <div class="tower-bar"><span class="letter">W</span><div class="bar" style="width:70px; background:#9c27b0;"></div><span class="count">7</span></div>
+                        <div class="tower-bar"><span class="letter">Z</span><div class="bar" style="width:40px; background:#9c27b0;"></div><span class="count">4</span></div>
+                    </div>
+                </div>
+                <div class="action-row">
+                    <button class="action-btn primary">📋 Kopiuj do schowka</button>
+                    <button class="action-btn secondary">📤 Eksport PDF</button>
+                </div>
+            </div>
+
+            <!-- IMPORT -->
+            <div class="tab-content" id="tab-import">
+                <div class="section-title">📥 Import danych</div>
+                <p style="font-size:13px; color:#888; margin-bottom:20px;">Wgraj pliki Excel eksportowane z Power BI, Serenity i SSPOT. Minimum: Roster + Grafik + Absencje.</p>
+
+                <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+                    <!-- ROSTER -->
+                    <div style="background:#1a1a2e; border:2px dashed #2a2a4a; border-radius:12px; padding:24px; text-align:center; cursor:pointer;" onclick="document.getElementById('f-roster').click()" id="card-roster">
+                        <div style="font-size:36px; margin-bottom:10px;">👥</div>
+                        <h3 style="font-size:15px; margin-bottom:6px;">Roster</h3>
+                        <p style="font-size:11px; color:#888; margin-bottom:12px;">Lista pracowników — Employee ID, Login, Badge, Shift, Manager</p>
+                        <div style="padding:3px 10px; display:inline-block; border-radius:10px; font-size:10px; background:#ff980020; color:#ff9800;">co tydzień</div>
+                        <div id="info-roster" style="margin-top:10px; font-size:11px; color:#4caf50; display:none;"></div>
+                        <input type="file" id="f-roster" accept=".xlsx,.xlsm,.xls" onchange="handleImport('roster',this)">
+                    </div>
+                    <!-- GRAFIK -->
+                    <div style="background:#1a1a2e; border:2px dashed #2a2a4a; border-radius:12px; padding:24px; text-align:center; cursor:pointer;" onclick="document.getElementById('f-grafik').click()" id="card-grafik">
+                        <div style="font-size:36px; margin-bottom:10px;">📅</div>
+                        <h3 style="font-size:15px; margin-bottom:6px;">Grafik Zmianowy</h3>
+                        <p style="font-size:11px; color:#888; margin-bottom:12px;">Harmonogram z SSPOT — która kohorta pracuje danego dnia</p>
+                        <div style="padding:3px 10px; display:inline-block; border-radius:10px; font-size:10px; background:#9c27b020; color:#9c27b0;">co miesiąc</div>
+                        <div id="info-grafik" style="margin-top:10px; font-size:11px; color:#4caf50; display:none;"></div>
+                        <input type="file" id="f-grafik" accept=".xlsx,.xlsm,.xls" onchange="handleImport('grafik',this)">
+                    </div>
+                    <!-- ABSENCJE -->
+                    <div style="background:#1a1a2e; border:2px dashed #2a2a4a; border-radius:12px; padding:24px; text-align:center; cursor:pointer;" onclick="document.getElementById('f-absencje').click()" id="card-absencje">
+                        <div style="font-size:36px; margin-bottom:10px;">🏥</div>
+                        <h3 style="font-size:15px; margin-bottom:6px;">Absencje</h3>
+                        <p style="font-size:11px; color:#888; margin-bottom:12px;">Eksport z Power BI — Planned + Unplanned na next day</p>
+                        <div style="padding:3px 10px; display:inline-block; border-radius:10px; font-size:10px; background:#2196f320; color:#2196f3;">codziennie</div>
+                        <div id="info-absencje" style="margin-top:10px; font-size:11px; color:#4caf50; display:none;"></div>
+                        <input type="file" id="f-absencje" accept=".xlsx,.xlsm,.xls" onchange="handleImport('absencje',this)">
+                    </div>
+                    <!-- SWITCH OUT -->
+                    <div style="background:#1a1a2e; border:2px dashed #2a2a4a; border-radius:12px; padding:24px; text-align:center; cursor:pointer;" onclick="document.getElementById('f-switchout').click()" id="card-switchout">
+                        <div style="font-size:36px; margin-bottom:10px;">🔄</div>
+                        <h3 style="font-size:15px; margin-bottom:6px;">Switch Out</h3>
+                        <p style="font-size:11px; color:#888; margin-bottom:12px;">Eksport z Serenity — pracownicy przeniesieni do innego działu</p>
+                        <div style="padding:3px 10px; display:inline-block; border-radius:10px; font-size:10px; background:#2196f320; color:#2196f3;">codziennie</div>
+                        <div id="info-switchout" style="margin-top:10px; font-size:11px; color:#4caf50; display:none;"></div>
+                        <input type="file" id="f-switchout" accept=".xlsx,.xlsm,.xls" onchange="handleImport('switchout',this)">
+                    </div>
+                    <!-- SWITCH IN + OT -->
+                    <div style="background:#1a1a2e; border:2px dashed #2a2a4a; border-radius:12px; padding:24px; text-align:center; cursor:pointer;" onclick="document.getElementById('f-switchin').click()" id="card-switchin">
+                        <div style="font-size:36px; margin-bottom:10px;">➕</div>
+                        <h3 style="font-size:15px; margin-bottom:6px;">Switch IN + OT</h3>
+                        <p style="font-size:11px; color:#888; margin-bottom:12px;">Eksport z Serenity — przychodzący + nadgodziny/VET</p>
+                        <div style="padding:3px 10px; display:inline-block; border-radius:10px; font-size:10px; background:#2196f320; color:#2196f3;">codziennie</div>
+                        <div id="info-switchin" style="margin-top:10px; font-size:11px; color:#4caf50; display:none;"></div>
+                        <input type="file" id="f-switchin" accept=".xlsx,.xlsm,.xls" onchange="handleImport('switchin',this)">
+                    </div>
+                </div>
+
+                <button class="generate-btn" id="genBtn" disabled onclick="generateBoard()">🚀 Generuj Staffing Board</button>
+            </div>
+        </div>
+
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="import-section">
+                <h4 style="font-size:12px; color:#888; text-transform:uppercase; margin-bottom:10px; letter-spacing:0.5px;">📥 Status importu</h4>
+                <div class="import-btn" id="sb-roster"><span class="icon">👥</span><span class="text">Roster</span><span class="dot dot-orange"></span></div>
+                <div class="import-btn" id="sb-grafik"><span class="icon">📅</span><span class="text">Grafik</span><span class="dot dot-orange"></span></div>
+                <div class="import-btn" id="sb-absencje"><span class="icon">🏥</span><span class="text">Absencje</span><span class="dot dot-orange"></span></div>
+                <div class="import-btn" id="sb-switchout"><span class="icon">🔄</span><span class="text">Switch Out</span><span class="dot dot-orange"></span></div>
+                <div class="import-btn" id="sb-switchin"><span class="icon">➕</span><span class="text">Switch IN+OT</span><span class="dot dot-orange"></span></div>
+            </div>
+
+            <div style="margin-top:20px;">
+                <h4 style="font-size:12px; color:#888; text-transform:uppercase; margin-bottom:10px; letter-spacing:0.5px;">🔧 Indirect</h4>
+                <div class="indirect-card"><span class="role">Waterspider</span><span class="count">3</span></div>
+                <div class="indirect-card"><span class="role">Problem Solve</span><span class="count">3</span></div>
+                <div class="indirect-card"><span class="role">Decant</span><span class="count">2</span></div>
+                <div class="indirect-card"><span class="role">Obiady</span><span class="count">2</span></div>
+                <div class="indirect-card"><span class="role">Count</span><span class="count">2</span></div>
+                <div class="indirect-card"><span class="role">Training</span><span class="count">1</span></div>
+                <div class="indirect-card"><span class="role">Stand Up</span><span class="count">2</span></div>
+            </div>
+
+            <div style="margin-top:20px;">
+                <h4 style="font-size:12px; color:#888; text-transform:uppercase; margin-bottom:10px; letter-spacing:0.5px;">⚡ Akcje</h4>
+                <div class="import-btn" style="border-color:#e94560;"><span class="icon">🚀</span><span class="text" style="color:#e94560; font-weight:600;">Generuj Board</span></div>
+                <div class="import-btn"><span class="icon">🔄</span><span class="text">Odśwież</span></div>
+                <div class="import-btn"><span class="icon">📊</span><span class="text">Historia</span></div>
+                <div class="import-btn"><span class="icon">⚙️</span><span class="text">Ustawienia</span></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const loaded = { roster: false, grafik: false, absencje: false, switchout: false, switchin: false };
+
+        function showTab(name) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + name).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function handleImport(type, input) {
+            const file = input.files[0];
+            if (!file) return;
+            const card = document.getElementById('card-' + type);
+            card.style.borderColor = '#4caf50';
+            card.style.borderStyle = 'solid';
+            const info = document.getElementById('info-' + type);
+            info.style.display = 'block';
+            info.textContent = '✓ ' + file.name + ' (' + (file.size/1024).toFixed(1) + ' KB)';
+            const sb = document.getElementById('sb-' + type);
+            sb.classList.add('loaded');
+            sb.querySelector('.dot').className = 'dot dot-green';
+            loaded[type] = true;
+            if (loaded.roster && loaded.grafik && loaded.absencje) {
+                document.getElementById('genBtn').disabled = false;
+            }
+        }
+
+        function filterRoster(query) {
+            const rows = document.querySelectorAll('#fullRoster tbody tr');
+            rows.forEach(row => {
+                const login = row.cells[1].textContent.toLowerCase();
+                row.style.display = login.includes(query.toLowerCase()) ? '' : 'none';
+            });
+        }
+
+        function filterByStatus(status) {
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            const rows = document.querySelectorAll('#fullRoster tbody tr');
+            rows.forEach(row => {
+                if (status === 'all') { row.style.display = ''; }
+                else { row.style.display = row.dataset.status === status ? '' : 'none'; }
+            });
+        }
+
+        function generateBoard() {
+            alert('🚀 Board wygenerowany!\n\nDane przetworzone:\n• Roster → załadowany\n• Grafik → zmiany ustalone\n• Absencje → matched z rosterem\n\nPrzejdź do zakładki Dashboard lub FINITO.');
+            showTab('dashboard');
+            document.querySelectorAll('.nav-tab')[0].classList.add('active');
+        }
+    </script>
+</body>
+</html>
+
